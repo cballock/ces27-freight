@@ -21,8 +21,15 @@ func (r *Ring) search(key string) int {
     /////////////////////////
     // YOUR CODE GOES HERE //
     /////////////////////////
-
-    return 0
+    hashId := hashId(key)
+    i := 0
+    // It's not necessary to lock/unlock the ring mutex in this method because the public methods (i.e., AddNode and RemoveNode) that manipulate the ring structure already do that;
+    for nodeIndex, node := range r.Nodes { // Implementation note: the nodes are increasinly ordered by their HashIds;
+        if hashId <= node.HashId {
+            i = nodeIndex
+        }
+    }
+    return i
 }
 
 // NewRing will create a new Ring object and return a pointer to it.

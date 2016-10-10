@@ -8,10 +8,14 @@ import (
 ///////////////////////////////
 // THIS FILE IS MISSING CODE //
 ///////////////////////////////
+type TimedValue struct {
+    value string
+    timestamp int64
+}
 
 // Cache is the struct that handle all the data storage for the dynamo server.
 type Cache struct {
-    data map[string]string
+    data map[string]TimedValue
     sync.Mutex
 }
 
@@ -19,7 +23,7 @@ type Cache struct {
 func NewCache() *Cache {
     var s Cache
 
-    s.data = make(map[string]string)
+    s.data = make(map[string]TimedValue)
 
     return &s
 }
@@ -28,8 +32,9 @@ func NewCache() *Cache {
 // requests by locking the structure.
 func (cache *Cache) Get(key string) (value string, timestamp int64) {
     cache.Lock()
-    value = cache.data[key]
-    timestamp = 0
+    timedValue := cache.data[key]
+    value = timedValue.value
+    timestamp = timedValue.timestamp
     cache.Unlock()
 
     log.Printf("[CACHE] Getting Key '%v' with Value '%v' @ timestamp '%v'\n", key, value, timestamp)
@@ -42,7 +47,7 @@ func (cache *Cache) Put(key string, value string, timestamp int64) {
     log.Printf("[CACHE] Putting Key '%v' with Value '%v' @ timestamp '%v'\n", key, value, timestamp)
 
     cache.Lock()
-    cache.data[key] = value
+    cache.data[key] = TimedValue{value: value, timestamp: timestamp} // Assuming the new timestamp is always greater than the previous timestamps;
     cache.Unlock()
 
     return
@@ -51,7 +56,11 @@ func (cache *Cache) Put(key string, value string, timestamp int64) {
 // Retrieve all information from the server. This shouldn't be used in any way
 // except for testing purposes.
 func (cache *Cache) getAll() (data map[string]string, timestamps map[string]int64) {
-    data = cache.data
+    data = make(map[string]string)
     timestamps = make(map[string]int64)
+    for key, timedValue := range cache.data {
+        data[key] = timedValue.value
+        timestamps[key] = timedValue.timestamp
+    }
     return data, timestamps
 }
