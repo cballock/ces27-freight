@@ -1,6 +1,10 @@
-package dynamo
+package infra
 
 import "log"
+
+type InternalRPC struct {
+	server *Server
+}
 
 type SyncRingsReply struct {
 	RingMap map[string]string
@@ -9,10 +13,6 @@ type SyncRingsReply struct {
 type AddNodeArgs struct {
 	Id       string
 	Hostname string
-}
-
-type InternalRPC struct {
-	server *Server
 }
 
 type CoordinatePutArgs struct {
@@ -84,7 +84,7 @@ func (rpc *InternalRPC) CoordinateGet(args *CoordinateGetArgs, reply *Coordinate
 
 // Replicate will be called by a replication operation to store data.
 func (rpc *InternalRPC) Replicate(args *ReplicateArgs, _ *struct{}) error {
-	log.Printf("[INTERNAL] Replicating '%v' = '%v' (timestamp: '%v')\n", args.Key, args.Value, args.Timestamp)
+	log.Printf("Replicating '%v' = '%v' (timestamp: '%v').\n", args.Key, args.Value, args.Timestamp)
 	rpc.server.cache.Put(args.Key, args.Value, args.Timestamp)
 	return nil
 }
@@ -98,7 +98,7 @@ func (rpc *InternalRPC) Vote(args *VoteArgs, reply *VoteReply) error {
 
 	value, timestamp = rpc.server.cache.Get(args.Key)
 
-	log.Printf("[INTERNAL] Voting for '%v' = '%v' (timestamp: %v)\n", args.Key, value, timestamp)
+	log.Printf("Voting for '%v' = '%v' (timestamp: %v).\n", args.Key, value, timestamp)
 
 	*reply = VoteReply{value, timestamp}
 	return nil

@@ -1,8 +1,9 @@
-package dynamo
+package infra
 
 import (
 	"bufio"
-	"fmt"
+    "fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -35,14 +36,14 @@ func (console *Console) Run() {
 		switch tokens[0] {
 		case "get":
 			if len(tokens) < 2 {
-				fmt.Println("[CONSOLE] usage: get <key>")
+				log.Println("Usage: get <key>")
 				break
 			}
 
 			key := tokens[1]
 			value, timestamp := console.cache.Get(key)
 
-			fmt.Printf("[CONSOLE] Get result: '%v' = '%v (ts: '%v')\n", key, value, timestamp)
+			log.Printf("Get result: '%v' = '%v (ts: '%v').\n", key, value, timestamp)
 
 		case "rget":
 			var (
@@ -50,7 +51,7 @@ func (console *Console) Run() {
 				err   error
 			)
 			if len(tokens) < 3 {
-				fmt.Println("[CONSOLE] usage: rget <key> <quorum>")
+				log.Println("Usage: rget <key> <quorum>")
 				break
 			}
 
@@ -58,21 +59,21 @@ func (console *Console) Run() {
 			quorum, err := strconv.Atoi(tokens[2])
 
 			if err != nil {
-				fmt.Println("[CONSOLE] invalid quorum value.")
+				log.Println("Invalid quorum value.")
 				break
 			}
 
 			value, err = console.server.RouteGet(key, quorum)
 
 			if err != nil {
-				fmt.Println("[CONSOLE] Rget result: failed.")
+				log.Println("Rget result: failed.")
 				break
 			}
 
-			fmt.Printf("[CONSOLE] Rget result: '%v' = '%v'\n", key, value)
+			log.Printf("Rget result: '%v' = '%v'.\n", key, value)
 		case "put":
 			if len(tokens) < 3 {
-				fmt.Println("[CONSOLE] usage: put <key> <value>")
+				log.Println("Usage: put <key> <value>")
 				break
 			}
 
@@ -83,7 +84,7 @@ func (console *Console) Run() {
 
 		case "rput":
 			if len(tokens) < 4 {
-				fmt.Println("[CONSOLE] usage: rput <key> <value> <quorum>")
+				log.Println("Usage: rput <key> <value> <quorum>")
 				break
 			}
 
@@ -92,7 +93,7 @@ func (console *Console) Run() {
 			quorum, err := strconv.Atoi(tokens[3])
 
 			if err != nil {
-				fmt.Println("[CONSOLE] invalid quorum value.")
+				log.Println("Invalid quorum value.")
 				break
 			}
 
@@ -102,26 +103,26 @@ func (console *Console) Run() {
 			w := tabwriter.NewWriter(os.Stdout, 5, 0, 1, '_', tabwriter.Debug)
 
 			cacheMap, cacheTimestamps := console.cache.getAll()
-			fmt.Fprintf(w, "[CONSOLE] KEY\tVALUE\tTIMESTAMP\t\n")
+			fmt.Fprintf(w, "KEY\tVALUE\tTIMESTAMP\t\n")
 			for key, value := range cacheMap {
-				fmt.Fprintf(w, "[CONSOLE] '%v'\t'%v'\t%v\t\n", key, value, cacheTimestamps[key])
+				fmt.Fprintf(w, "'%v'\t'%v'\t%v\t\n", key, value, cacheTimestamps[key])
 			}
 			w.Flush()
 
 		case "ring":
 			w := tabwriter.NewWriter(os.Stdout, 5, 0, 1, '_', tabwriter.Debug)
-			fmt.Fprintf(w, "[CONSOLE] HASH\tID\t\n")
+			fmt.Fprintf(w, "HASH\tID\t\n")
 			for _, node := range console.server.ring.hashring.Nodes {
-				fmt.Fprintf(w, "[CONSOLE] '%v'\t'%v'\t\n", node.HashId, node.Id)
+				fmt.Fprintf(w, "'%v'\t'%v'\t\n", node.HashId, node.Id)
 			}
 			w.Flush()
 
 		case "down":
-			fmt.Println("[CONSOLE] Putting server DOWN.")
+			log.Println("Putting server DOWN.")
 			go console.server.Stop()
 
 		case "up":
-			fmt.Println("[CONSOLE] Putting server UP.")
+			log.Println("Putting server UP.")
 			go console.server.Start()
 		}
 	}

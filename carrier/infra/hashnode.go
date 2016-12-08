@@ -1,4 +1,4 @@
-package consistenthash
+package infra
 
 type Node struct {
 	Id     string

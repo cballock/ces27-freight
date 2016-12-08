@@ -1,13 +1,10 @@
-package dynamo
+package infra
 
 import (
     "log"
     "sync"
 )
 
-///////////////////////////////
-// THIS FILE IS MISSING CODE //
-///////////////////////////////
 type TimedValue struct {
     value string
     timestamp int64
@@ -28,8 +25,7 @@ func NewCache() *Cache {
     return &s
 }
 
-// Get the value of a key from the storage. This will handle concurrent get
-// requests by locking the structure.
+// Get the value of a key from the storage. This will handle concurrent get requests by locking the structure.
 func (cache *Cache) Get(key string) (value string, timestamp int64) {
     cache.Lock()
     timedValue := cache.data[key]
@@ -37,14 +33,13 @@ func (cache *Cache) Get(key string) (value string, timestamp int64) {
     timestamp = timedValue.timestamp
     cache.Unlock()
 
-    log.Printf("[CACHE] Getting Key '%v' with Value '%v' @ timestamp '%v'\n", key, value, timestamp)
+    log.Printf("Getting Key '%v' with Value '%v' @ timestamp '%v'\n", key, value, timestamp)
     return
 }
 
-// Put a value to a key in the storage. This will handle concurrent put
-// requests by locking the structure.
+// Put a value to a key in the storage. This will handle concurrent put requests by locking the structure.
 func (cache *Cache) Put(key string, value string, timestamp int64) {
-    log.Printf("[CACHE] Putting Key '%v' with Value '%v' @ timestamp '%v'\n", key, value, timestamp)
+    log.Printf("Putting Key '%v' with Value '%v' @ timestamp '%v'\n", key, value, timestamp)
 
     cache.Lock()
     cache.data[key] = TimedValue{value: value, timestamp: timestamp} // Assuming the new timestamp is always greater than the previous timestamps;
@@ -53,8 +48,7 @@ func (cache *Cache) Put(key string, value string, timestamp int64) {
     return
 }
 
-// Retrieve all information from the server. This shouldn't be used in any way
-// except for testing purposes.
+// Retrieve all information from the server. This shouldn't be used in any way except for testing purposes.
 func (cache *Cache) getAll() (data map[string]string, timestamps map[string]int64) {
     data = make(map[string]string)
     timestamps = make(map[string]int64)

@@ -1,4 +1,4 @@
-package consistenthash
+package infra
 
 import (
     "errors"
@@ -9,37 +9,32 @@ import (
 
 var ErrNodeNotFound = errors.New("node not found")
 
-// Ring is the data structure that holds a consistent hashed ring.
-type Ring struct {
+// HashRing is the data structure that holds a consistent hashed ring.
+type HashRing struct {
     Nodes Nodes
     sync.Mutex
 }
 
-// search will find the index of the node that is responsible for the range that
-// includes the hashed value of key.
-func (r *Ring) search(key string) int {
-    /////////////////////////
-    // YOUR CODE GOES HERE //
-    /////////////////////////
+// search will find the index of the node that is responsible for the range that includes the hashed value of key.
+func (r *HashRing) search(key string) int {
     hashId := hashId(key)
     i := 0
-    // It's not necessary to lock/unlock the ring mutex in this method because the public methods (i.e., AddNode and RemoveNode) that manipulate the ring structure already do that;
-    for nodeIndex, node := range r.Nodes { // Implementation note: the nodes are increasinly ordered by their HashIds;
-        if hashId <= node.HashId {
+    // It's not necessary to lock/unlock the ring mutex in this method because the public methods that manipulate the ring structure (i.e., AddNode and RemoveNode) already do that;
+    for nodeIndex, node := range r.Nodes {
+        if hashId <= node.HashId { // Implementation note: this is valid because the nodes are increasinly ordered by their HashIds;
             i = nodeIndex
         }
     }
     return i
 }
 
-// NewRing will create a new Ring object and return a pointer to it.
-func NewRing() *Ring {
-    return &Ring{Nodes: Nodes{}}
+// NewHashRing will create a new HashRing object and return a pointer to it.
+func NewHashRing() *HashRing {
+    return &HashRing{Nodes: Nodes{}}
 }
 
-// Verify if a node with a given id already exists in the ring and if so return
-// a pointer to it.
-func (r *Ring) Exists(id string) (bool, *Node) {
+// Verify if a node with a given id already exists in the ring and if so return a pointer to it.
+func (r *HashRing) Exists(id string) (bool, *Node) {
     r.Lock()
     defer r.Unlock()
 
@@ -53,7 +48,7 @@ func (r *Ring) Exists(id string) (bool, *Node) {
 }
 
 // Add a node to the ring and return a pointer to it.
-func (r *Ring) AddNode(id string) *Node {
+func (r *HashRing) AddNode(id string) *Node {
     r.Lock()
     defer r.Unlock()
 
@@ -66,7 +61,7 @@ func (r *Ring) AddNode(id string) *Node {
 }
 
 // Remove a node from the ring.
-func (r *Ring) RemoveNode(id string) error {
+func (r *HashRing) RemoveNode(id string) error {
     r.Lock()
     defer r.Unlock()
 
@@ -81,7 +76,7 @@ func (r *Ring) RemoveNode(id string) error {
 }
 
 // Get the id of the node responsible for the hash range of id.
-func (r *Ring) Get(id string) string {
+func (r *HashRing) Get(id string) string {
     i := r.search(id)
     if i >= r.Nodes.Len() {
         i = 0
@@ -90,9 +85,8 @@ func (r *Ring) Get(id string) string {
     return r.Nodes[i].Id
 }
 
-// GetNext will return the next node after the one responsible for the hash
-// range of id.
-func (r *Ring) GetNext(id string) (string, error) {
+// GetNext will return the next node after the one responsible for the hash range of id.
+func (r *HashRing) GetNext(id string) (string, error) {
     r.Lock()
     defer r.Unlock()
     var i = 0

@@ -1,15 +1,12 @@
-package dynamo
+package infra
 
 import (
     "log"
-
-    "github.com/pauloaguiar/ces27-lab2/common/consistenthash"
 )
 
-// Ring is the struct that will hold the current status of the consistent hash
-// data structure that will be used to replicate data among nodes.
+// Ring is the struct that will hold the current status of the consistent hash data structure that will be used to replicate data among nodes.
 type Ring struct {
-    hashring     *consistenthash.Ring
+    hashring     *HashRing
     idToHostname map[string]string
     server       *Server
 }
@@ -17,47 +14,42 @@ type Ring struct {
 // NewRing creates a new Ring object and return a pointer to it.
 func NewRing(server *Server) *Ring {
     var newRing *Ring
-
     newRing = new(Ring)
-    newRing.hashring = consistenthash.NewRing()
+    newRing.hashring = NewHashRing()
     newRing.idToHostname = make(map[string]string)
     newRing.server = server
     return newRing
 }
 
-// Add a node to the ring structure. This also handle collisions and update it
-// in case of changes. The idToHostname is always update to represent the last
-// state of a known node.
+// Add a node to the ring structure. This also handle collisions and update it in case of changes. The idToHostname is always update to represent the last state of a known node.
 func (ring *Ring) AddNode(id, hostname string) {
     var (
-        node   *consistenthash.Node
+        node   *Node
         exists bool
     )
 
     if exists, node = ring.hashring.Exists(id); !exists {
         node = ring.hashring.AddNode(id)
         ring.idToHostname[id] = hostname
-        log.Printf("[RING] Added node '%v'(hostname: '%v') to the local ring(hash: '%v')\n", id, hostname, node.HashId)
+        log.Printf("Added node '%v'(hostname: '%v') to the local ring(hash: '%v')\n", id, hostname, node.HashId)
     } else {
-        log.Printf("[RING] Node '%v'(hostname: '%v') already exists in the local ring(hash: '%v')\n", id, hostname, node.HashId)
+        log.Printf("Node '%v'(hostname: '%v') already exists in the local ring(hash: '%v')\n", id, hostname, node.HashId)
 
         if ring.idToHostname[id] != hostname {
-            log.Printf("[RING] Updating '%v' hostname from '%v' to '%v'\n", id, ring.idToHostname[id], hostname)
+            log.Printf("Updating '%v' hostname from '%v' to '%v'\n", id, ring.idToHostname[id], hostname)
             ring.idToHostname[id] = hostname
         }
     }
 }
 
-// GetCoordinator will return the main coordinator for a key. The main
-// coordinator is the first node that has a hash higher than the hash of the key.
+// GetCoordinator will return the main coordinator for a key. The main coordinator is the first node that has a hash higher than the hash of the key.
 func (ring *Ring) GetCoordinator(key string) (id, hostname string) {
     id = ring.hashring.Get(key)
     hostname = ring.idToHostname[id]
     return
 }
 
-// GetNextCoordinator return the next node in the ring starting from the node
-// represented by id.
+// GetNextCoordinator return the next node in the ring starting from the node represented by id.
 func (ring *Ring) GetNextCoordinator(id string) (nextId, hostname string, err error) {
     nextId, err = ring.hashring.GetNext(id)
 
@@ -113,7 +105,7 @@ func (ring *Ring) Sync(joinAddress string) {
     err = ring.server.CallInternalHost(joinAddress, "SyncRings", new(struct{}), &reply)
 
     if err != nil {
-        log.Printf("[RING] Failed to Sync ring with host '%v'. Error: %v\n", joinAddress, err)
+        log.Printf("Failed to Sync ring with host '%v'. Error: %v\n", joinAddress, err)
         return
     }
 
@@ -134,24 +126,22 @@ func (ring *Ring) Sync(joinAddress string) {
     }
 }
 
-// Report calls a hostname node and report that this node has been added to the
-// ring.
+// Report calls a hostname node and report that this node has been added to the ring.
 func (ring *Ring) Report(hostname string) {
     var (
         err error
     )
 
-    log.Printf("[RING] Reporting to host '%v'\n", hostname)
+    log.Printf("Reporting to host '%v'\n", hostname)
     err = ring.server.CallInternalHost(hostname, "AddNode", &AddNodeArgs{ring.server.id, ring.server.connHostname}, new(struct{}))
 
     if err != nil {
-        log.Printf("[RING] Failed to Report to host '%v'. Error: %v\n", hostname, err)
+        log.Printf("Failed to Report to host '%v'. Error: %v\n", hostname, err)
         return
     }
 }
 
-// Return a map of nodes in which the key is the id of the node and the value is
-// its hostname.
+// Return a map of nodes in which the key is the id of the node and the value is its hostname.
 func (ring *Ring) GetMap() *map[string]string {
     var (
         ringMap map[string]string
